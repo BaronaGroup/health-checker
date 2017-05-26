@@ -47,7 +47,7 @@ function checkHealth(checks) {
         success,
         failures: failures.length ? failures : undefined,
         ping,
-        details: details
+        details: Object.keys(details).length ? details : undefined
       }
     })
 
