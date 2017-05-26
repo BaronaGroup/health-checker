@@ -71,7 +71,7 @@ function prepareChecksOfType(type, checks) {
 function prepareCheck(check, suggestions) {
   if (!check) return null
   return {
-    service: check.name || suggestions.name || 'unspecified',
+    service: suggestions.service || check.name || 'unspecified',
     type: check.type || suggestions.type,
     run: (check.apply ? check : check.run) || canNotRun
   }
