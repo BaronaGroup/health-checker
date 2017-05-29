@@ -5,10 +5,11 @@ const P = require('bluebird'),
 
 let configuration = {}
 
-exports.configure = function (internalChecks, integrationChecks) {
+exports.configure = function (internalChecks, integrationChecks, timeout) {
   configuration = {
     internalChecks: prepareChecksOfType('internal', internalChecks),
-    integrationChecks: prepareChecksOfType('integration', integrationChecks)
+    integrationChecks: prepareChecksOfType('integration', integrationChecks),
+    timeout: timeout || 5000
   }
 }
 
@@ -19,14 +20,17 @@ exports.setupExpressRoutes = function (app, prefix, additionalMiddleware) {
 exports.expressHealthCheck = function (req, res, next) {
   const internalOnly = req.params.mode === 'internal' || req.query.mode === 'internal' || req.query.internal
 
-  const healthChecks = configuration.internalChecks.concat(internalOnly ? [] : configuration.integrationChecks)
-
-  checkHealth(healthChecks)
+  exports.runHealthChecks(internalOnly)
     .then(function (results) {
       if (!results.success) res.status(500)
       res.send(results)
     })
     .catch(next)
+}
+
+exports.runHealthChecks = function(internalOnly) {
+  const healthChecks = configuration.internalChecks.concat(internalOnly ? [] : configuration.integrationChecks)
+  return checkHealth(healthChecks)
 }
 
 exports.officeHoursActivityThreshold = function (getLastOccurrence, thresholdMinutes) {
@@ -112,14 +116,15 @@ function prepareCheck(check, suggestions) {
   return {
     service: suggestions.service || check.name || 'unspecified',
     type: check.type || suggestions.type,
-    run: (check.apply ? check : check.run) || canNotRun
+    run: (check.apply ? check : check.run) || canNotRun,
+    timeout: check.timeout
   }
 }
 
 function checkSingleHealth(check) {
   const dateAtStart = new Date().valueOf()
   const baseOutput = {service: check.service, type: check.type}
-  return P.try(() => check.run()).timeout(check.timeout || 5000)
+  return P.try(() => check.run()).timeout(check.timeout || configuration.timeout)
     .then(function (result) {
       const duration = new Date().valueOf() - dateAtStart
       return Object.assign(baseOutput, {success: true, duration, details: result && result.details})

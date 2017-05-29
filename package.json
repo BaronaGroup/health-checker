@@ -9,12 +9,16 @@
   },
   "devDependencies": {
     "background-eslint-hook-impl": "git+https://github.com/BaronaGroup/background-eslint-hook-impl.git#master",
+    "chai": "^4.0.0",
     "eslint": "^3.19.0",
+    "lodash": "^4.17.4",
+    "mocha": "^3.4.2",
     "post-commit": "0.0.1"
   },
   "scripts": {
     "eslint": "eslint .",
-    "background-eslint-hook-impl": "background-eslint-hook-impl"
+    "background-eslint-hook-impl": "background-eslint-hook-impl",
+    "test": "mocha"
   },
   "engines": {
     "node": ">=4.5"
