@@ -44,7 +44,8 @@ exports.officeHoursActivityThreshold = function (getLastOccurrence, thresholdMin
     endForToday.setMilliseconds(0)
 
     const now = new Date(),
-      isOfficeHours = now >= startForToday && now <= endForToday, // TODO: add a thingamajig to prevent holidays from triggering health check failures
+      isWeekend = now.getDay() === 0 || now.getDay() === 6,
+      isOfficeHours = !isWeekend && now >= startForToday && now <= endForToday, // TODO: add a thingamajig to prevent holidays from triggering health check failures
       lastOccurrence = getLastOccurrence(),
       minsSinceLastOccurence = lastOccurrence ? Math.floor((new Date().valueOf() - lastOccurrence.valueOf()) / 60) : Infinity,
       isTooLongSince = minsSinceLastOccurence > thresholdMinutes,
