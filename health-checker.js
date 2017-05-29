@@ -29,6 +29,44 @@ exports.expressHealthCheck = function (req, res, next) {
     .catch(next)
 }
 
+exports.officeHoursActivityThreshold = function (getLastOccurrence, thresholdMinutes) {
+  return function() {
+    const startForToday = new Date()
+    startForToday.setHours(9)
+    startForToday.setMinutes(0)
+    startForToday.setSeconds(0)
+    startForToday.setMilliseconds(0)
+
+    const endForToday = new Date()
+    endForToday.setHours(17)
+    endForToday.setMinutes(0)
+    endForToday.setSeconds(0)
+    endForToday.setMilliseconds(0)
+
+    const now = new Date(),
+      isOfficeHours = now >= startForToday && now <= endForToday, // TODO: add a thingamajig to prevent holidays from triggering health check failures
+      lastOccurrence = getLastOccurrence(),
+      minsSinceLastOccurence = lastOccurrence ? Math.floor((new Date().valueOf() - lastOccurrence.valueOf()) / 60) : Infinity,
+      isTooLongSince = minsSinceLastOccurence > thresholdMinutes,
+      isFailure = isTooLongSince && isOfficeHours
+
+    const details = {
+      threshold: {
+        maxMinutesSinceLastEvent: thresholdMinutes,
+        minutesSinceLastEvent: minsSinceLastOccurence,
+        tolerated: isTooLongSince && !isOfficeHours ? 'tolerated because outside office hours' : undefined
+      }
+    }
+
+    if (isFailure) {
+      const error = new Error('Too long since last event; ' + JSON.stringify(details))
+      return P.reject(error)
+    } else {
+      return P.resolve({details: details})
+    }
+  }
+}
+
 function checkHealth(checks) {
   return P.all(checks.map(checkSingleHealth))
     .then(function (results) {
@@ -83,7 +121,7 @@ function checkSingleHealth(check) {
   return P.try(() => check.run()).timeout(check.timeout || 5000)
     .then(function (result) {
       const duration = new Date().valueOf() - dateAtStart
-      return Object.assign(baseOutput, {success: true, duration})
+      return Object.assign(baseOutput, {success: true, duration, details: result && result.details})
     }, function (err) {
       if (err instanceof P.TimeoutError) {
         return Object.assign(baseOutput, {success: false, isTimeout: true})
