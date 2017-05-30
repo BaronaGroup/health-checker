@@ -5,6 +5,9 @@ const P = require('bluebird'),
 
 let configuration = {}
 
+exports.getNow = () => new Date() // exposed for tests
+const getNow = () => exports.getNow()
+
 exports.configure = function (internalChecks, integrationChecks, timeout) {
   configuration = {
     internalChecks: prepareChecksOfType('internal', internalChecks),
@@ -35,19 +38,19 @@ exports.runHealthChecks = function(internalOnly) {
 
 exports.officeHoursActivityThreshold = function (getLastOccurrence, thresholdMinutes) {
   return function() {
-    const startForToday = new Date()
+    const startForToday = getNow()
     startForToday.setHours(9)
     startForToday.setMinutes(0)
     startForToday.setSeconds(0)
     startForToday.setMilliseconds(0)
 
-    const endForToday = new Date()
+    const endForToday = getNow()
     endForToday.setHours(17)
     endForToday.setMinutes(0)
     endForToday.setSeconds(0)
     endForToday.setMilliseconds(0)
 
-    const now = new Date(),
+    const now = getNow(),
       isWeekend = now.getDay() === 0 || now.getDay() === 6,
       isOfficeHours = !isWeekend && now >= startForToday && now <= endForToday, // TODO: add a thingamajig to prevent holidays from triggering health check failures
       lastOccurrence = getLastOccurrence(),

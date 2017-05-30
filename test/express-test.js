@@ -80,7 +80,6 @@ describe('express-test', function () {
     const server = await app.listen(4075)
     try {
       const response = await requestPromise('http://localhost:4075/health/internal', {json: true})
-      console.log(response)
       assert.ok(response.ping.intern)
       assert.ok(!response.ping.integr)
     } finally {
