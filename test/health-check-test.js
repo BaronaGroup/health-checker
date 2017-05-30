@@ -92,8 +92,37 @@ describe('health-check-test', function () {
   })
 
   describe('multiple checks', function () {
-    it('all successes means overall success')
-    it('any failure means overall failure')
-    it('timeout works in combination with other results')
+    it('all successes means overall success', async function () {
+      hc.configure({
+        test1: async () => {},
+        test2: async () => {},
+        test3: async () => {}
+      })
+      const results = await hc.runHealthChecks()
+      assert.isUndefined(results.failures)
+      assert.ok(results.success)
+    })
+
+    it('any failure means overall failure', async function () {
+      hc.configure({
+        test1: async () => {},
+        test2: async () => { throw new Error('F')},
+        test3: async () => {}
+      })
+      const results = await hc.runHealthChecks()
+      assert.equal(results.failures.length, 1)
+      assert.ok(!results.success)
+    })
+
+    it('timeout works in combination with other results', async function () {
+      hc.configure({
+        test1: async () => {},
+        test2: async () => { await P.delay(500)},
+        test3: async () => {}
+      }, {}, 200)
+      const results = await hc.runHealthChecks()
+      assert.equal(results.failures.length, 1)
+      assert.ok(!results.success)
+    })
   })
 })
