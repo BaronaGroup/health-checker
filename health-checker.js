@@ -51,7 +51,7 @@ exports.officeHoursActivityThreshold = function (getLastOccurrence, thresholdMin
       isWeekend = now.getDay() === 0 || now.getDay() === 6,
       isOfficeHours = !isWeekend && now >= startForToday && now <= endForToday, // TODO: add a thingamajig to prevent holidays from triggering health check failures
       lastOccurrence = getLastOccurrence(),
-      minsSinceLastOccurence = lastOccurrence ? Math.floor((new Date().valueOf() - lastOccurrence.valueOf()) / 60) : Infinity,
+      minsSinceLastOccurence = lastOccurrence ? Math.floor((now.valueOf() - lastOccurrence.valueOf()) / 1000 / 60) : Infinity,
       isTooLongSince = minsSinceLastOccurence > thresholdMinutes,
       isFailure = isTooLongSince && isOfficeHours
 
