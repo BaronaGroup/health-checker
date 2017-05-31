@@ -3,6 +3,12 @@
 primarily for use in Barona Technologies node.js code bases, with the intent of providing consistent
 output regardless of application.
 
+## Compatibility
+
+The health checker itself is known to be compatible with node versions 4.5.0 - 7.10.0.
+
+Tests require node 7+, since they rely on async function being natively supported.
+
 ## Installation
 
 Start with something along the lines of
@@ -106,3 +112,9 @@ The health checks generated using this function fail when there has been more th
 the most recent occurence and the current time, but only if the current time fulfills the following criteria:
 - it is monday, tuesday, wednesday, thursday or friday
 - it is between 9 am and 5 pm
+
+## Development
+
+### Running tests
+
+`npm test`
