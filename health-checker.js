@@ -1,7 +1,9 @@
 'use strict'
 
 const P = require('bluebird'),
-  _ = require('lodash')
+  _ = require('lodash'),
+  path = require('path'),
+  fs = P.promisifyAll(require('fs'))
 
 let configuration = {}
 
@@ -14,6 +16,10 @@ exports.configure = function (internalChecks, integrationChecks, timeout) {
     integrationChecks: prepareChecksOfType('integration', integrationChecks),
     timeout: timeout || 5000
   }
+  const versionJson = path.resolve('version.json')
+  fs.readFileAsync(versionJson)
+    .then((versionInfo) => Object.assign(configuration, {version: JSON.parse(versionInfo)}))
+    .catch((err) => console.warn(`${versionJson} not found, health check will not contain version information`))
 }
 
 exports.setupExpressRoutes = function (app, prefix, additionalMiddleware) {
@@ -87,13 +93,15 @@ function checkHealth(checks) {
         type: result.type,
         service: result.service,
         message: result.message,
-        isTimeout: result.isTimeout
+        isTimeout: result.isTimeout,
+        version: result.type !== 'internal' ? result.version : undefined
       }))
       return {
         success,
         failures: failures.length ? failures : undefined,
         ping,
-        details: Object.keys(details).length ? details : undefined
+        details: Object.keys(details).length ? details : undefined,
+        version: configuration.version
       }
     })
 
@@ -126,7 +134,7 @@ function prepareCheck(check, suggestions) {
 
 function checkSingleHealth(check) {
   const dateAtStart = new Date().valueOf()
-  const baseOutput = {service: check.service, type: check.type}
+  const baseOutput = {service: check.service, type: check.type, version: configuration.version}
   return P.try(() => check.run()).timeout(check.timeout || configuration.timeout)
     .then(function (result) {
       const duration = new Date().valueOf() - dateAtStart
