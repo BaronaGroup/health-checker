@@ -1,11 +1,22 @@
-const hc = require('../health-checker'),
+const fsMock = require('mock-fs'),
+  hc = require('../health-checker'),
   _ = require('lodash'),
   {assert} = require('chai'),
   P = require('bluebird')
 
 describe('health-check-test', function () {
+
   describe('single checks', function () {
-    it('success has ping', async function () {
+    it('success has ping and version.json information', async function () {
+      const versionJson = {
+        commit: 'd224ae7d9d35fcf9d8d3dbe53b985e1bb6b18ea9',
+        commitDate: '2017-06-05T08:50:13+03:00',
+        releaseDate: '2018-06-05T08:50:13+03:00'
+      }
+      fsMock({
+        'version.json' : JSON.stringify(versionJson)
+      })
+
       hc.configure({
         test: () => {
         }
@@ -13,6 +24,19 @@ describe('health-check-test', function () {
       const results = await hc.runHealthChecks()
       assert.ok(_.isNumber(results.ping.test))
       assert.ok(results.ping.test < 100)
+      assert.deepEqual(results.version, versionJson)
+      fsMock.restore()
+    })
+
+    it('success has ping and no version info if version.json not found', async function () {
+      hc.configure({
+        test: () => {
+        }
+      })
+      const results = await hc.runHealthChecks()
+      assert.ok(_.isNumber(results.ping.test))
+      assert.ok(results.ping.test < 100)
+      assert.isUndefined(results.version)
     })
 
     it('checks can be asynchronous (success)', async function () {
