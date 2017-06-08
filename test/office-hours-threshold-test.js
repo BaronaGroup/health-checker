@@ -25,7 +25,7 @@ describe('office hours threshold test', function () {
 
         const response = await hc.runHealthChecks()
         assert.ok(response.success)
-        assert.ok(response.details.test.threshold.tolerated)
+        assert.ok(response.details.test.message.threshold.tolerated)
       })
 
       it('before 9 am', async function() {
@@ -35,7 +35,7 @@ describe('office hours threshold test', function () {
 
         const response = await hc.runHealthChecks()
         assert.ok(response.success)
-        assert.ok(response.details.test.threshold.tolerated)
+        assert.ok(response.details.test.message.threshold.tolerated)
       })
 
       it('after 5 pm', async function() {
@@ -45,7 +45,7 @@ describe('office hours threshold test', function () {
 
         const response = await hc.runHealthChecks()
         assert.ok(response.success)
-        assert.ok(response.details.test.threshold.tolerated)
+        assert.ok(response.details.test.message.threshold.tolerated)
       })
     })
 
@@ -56,8 +56,8 @@ describe('office hours threshold test', function () {
 
         const response = await hc.runHealthChecks()
         assert.ok(response.success)
-        assert.ok(response.details.test.threshold.maxMinutesSinceLastEvent, 30)
-        assert.ok(response.details.test.threshold.minutesSinceLastEvent, 10)
+        assert.ok(response.details.test.message.threshold.maxMinutesSinceLastEvent, 30)
+        assert.ok(response.details.test.message.threshold.minutesSinceLastEvent, 10)
       })
 
       it('recent enough events result in success', async function() {

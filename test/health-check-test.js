@@ -4,26 +4,30 @@ const fsMock = require('mock-fs'),
   {assert} = require('chai'),
   P = require('bluebird')
 
+const versionJson = {
+  commit: 'd224ae7d9d35fcf9d8d3dbe53b985e1bb6b18ea9',
+  commitDate: '2017-06-05T08:50:13+03:00',
+  releaseDate: '2018-06-05T08:50:13+03:00'
+}
+
 describe('health-check-test', function () {
 
   describe('single checks', function () {
     it('success has ping and version.json information', async function () {
-      const versionJson = {
-        commit: 'd224ae7d9d35fcf9d8d3dbe53b985e1bb6b18ea9',
-        commitDate: '2017-06-05T08:50:13+03:00',
-        releaseDate: '2018-06-05T08:50:13+03:00'
-      }
       fsMock({
         'version.json' : JSON.stringify(versionJson)
       })
 
       hc.configure({
-        test: () => {
-        }
-      })
+          test: () => {}
+        },
+        null,
+        null,
+        'version.json')
       const results = await hc.runHealthChecks()
       assert.ok(_.isNumber(results.ping.test))
       assert.ok(results.ping.test < 100)
+      assert.isUndefined(results.details)
       assert.deepEqual(results.version, versionJson)
       fsMock.restore()
     })
@@ -109,9 +113,30 @@ describe('health-check-test', function () {
         test: () => ({details: 'oh my'})
       })
       const results = await hc.runHealthChecks()
-      assert.equal(results.details.test, 'oh my')
+      assert.equal(results.details.test.message, 'oh my')
     })
 
+    it('integration checks provide detailed message and versions', async function () {
+      fsMock({
+        'version.json' : JSON.stringify(versionJson)
+      })
+      hc.configure(null, {
+          test1: () => ({details: 'oh my1', version: {commit: 'SHA1'}}),
+          test2: () => ({details: 'oh my2', version: {commit: 'SHA2'}}),
+          test3: () => ({details: 'oh my3', version: {foo: 'SHA3'}}),
+          test4: () => ({details: 'oh my4'}),
+          test5: () => ({version: {commit: 'SHA5'}})
+        },
+        null,
+        'version.json')
+      const results = await hc.runHealthChecks()
+      assert.deepEqual(results.details.test1, {message: 'oh my1', version: 'SHA1'})
+      assert.deepEqual(results.details.test2, {message: 'oh my2', version: 'SHA2'})
+      assert.deepEqual(results.details.test3, {message: 'oh my3', version: undefined})
+      assert.deepEqual(results.details.test4, {message: 'oh my4', version: undefined})
+      assert.deepEqual(results.details.test5, {message: undefined, version: 'SHA5'})
+      assert.deepEqual(results.version, versionJson)
+    })
 
   })
 
