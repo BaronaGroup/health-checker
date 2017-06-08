@@ -106,7 +106,7 @@ function checkHealth(checks) {
 
 function readVersionJson(versionFile) {
   if (versionFile) {
-    return fs.existsSync(versionFile) ? JSON.parse(fs.readFileSync(versionFile)) : undefined
+    return fs.existsSync(versionFile) ? JSON.parse(fs.readFileSync(versionFile, 'utf8')) : undefined
   } else {
     return undefined
   }
