@@ -18,12 +18,7 @@ describe('health-check-test', function () {
         'version.json' : JSON.stringify(versionJson)
       })
 
-      hc.configure({
-          test: () => {}
-        },
-        null,
-        null,
-        'version.json')
+      hc.configure({test: () => {}}, null, {versionFile: 'version.json'})
       const results = await hc.runHealthChecks()
       assert.ok(_.isNumber(results.ping.test))
       assert.ok(results.ping.test < 100)
@@ -82,7 +77,7 @@ describe('health-check-test', function () {
     it('timeout is a thing', async function() {
       hc.configure({
         test: () => P.delay(500)
-      }, {}, 100)
+      }, {}, {timeout: 100})
       const results = await hc.runHealthChecks()
       assert.ok(!results.success)
       assert.ok(results.failures[0].isTimeout)
@@ -113,7 +108,7 @@ describe('health-check-test', function () {
         test: () => ({details: 'oh my'})
       })
       const results = await hc.runHealthChecks()
-      assert.equal(results.details.test.message, 'oh my')
+      assert.equal(results.details.test, 'oh my')
     })
 
     it('integration checks provide detailed message and versions', async function () {
@@ -121,7 +116,7 @@ describe('health-check-test', function () {
         'version.json' : JSON.stringify(versionJson)
       })
       hc.configure(null, {
-          test1: () => ({details: 'oh my1', version: {commit: 'SHA1'}}),
+          test1: () => ({details: 'oh my1', version: {commit: 'SHA1', releaseDate: 'date', foo: 'bar'}}),
           test2: () => ({details: 'oh my2', version: {commit: 'SHA2'}}),
           test3: () => ({details: 'oh my3', version: {foo: 'SHA3'}}),
           test4: () => ({details: 'oh my4'}),
@@ -130,12 +125,20 @@ describe('health-check-test', function () {
         null,
         'version.json')
       const results = await hc.runHealthChecks()
-      assert.deepEqual(results.details.test1, {message: 'oh my1', version: 'SHA1'})
-      assert.deepEqual(results.details.test2, {message: 'oh my2', version: 'SHA2'})
-      assert.deepEqual(results.details.test3, {message: 'oh my3', version: undefined})
-      assert.deepEqual(results.details.test4, {message: 'oh my4', version: undefined})
-      assert.deepEqual(results.details.test5, {message: undefined, version: 'SHA5'})
-      assert.deepEqual(results.version, versionJson)
+      console.log(results)
+      assert.equal(results.details.test1, 'oh my1')
+      assert.deepEqual(results.dependencies.test1, {commit: 'SHA1', releaseDate: 'date', foo: 'bar'})
+
+      assert.equal(results.details.test2, 'oh my2')
+      assert.deepEqual(results.dependencies.test2, {commit: 'SHA2'})
+
+      assert.equal(results.details.test3, 'oh my3')
+      assert.deepEqual(results.dependencies.test3, {foo: 'SHA3'})
+
+      assert.equal(results.details.test4, 'oh my4')
+      assert.isUndefined(results.dependencies.test4)
+
+      assert.deepEqual(results.dependencies.test5, {commit: 'SHA5'})
     })
 
   })
@@ -168,7 +171,7 @@ describe('health-check-test', function () {
         test1: async () => {},
         test2: async () => { await P.delay(500)},
         test3: async () => {}
-      }, {}, 200)
+      }, {}, {timeout: 200})
       const results = await hc.runHealthChecks()
       assert.equal(results.failures.length, 1)
       assert.ok(!results.success)

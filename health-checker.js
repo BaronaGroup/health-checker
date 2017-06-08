@@ -10,12 +10,13 @@ let configuration = {}
 exports.getNow = () => new Date() // exposed for tests
 const getNow = () => exports.getNow()
 
-exports.configure = function (internalChecks, integrationChecks, timeout, versionFile) {
+exports.configure = function (internalChecks, integrationChecks, options) {
+  const opts = options || {}
   configuration = {
     internalChecks: prepareChecksOfType('internal', internalChecks),
     integrationChecks: prepareChecksOfType('integration', integrationChecks),
-    timeout: timeout || 5000,
-    version: readVersionJson(versionFile)
+    timeout: opts.timeout || 5000,
+    version: readVersionJson(opts.versionFile)
   }
 }
 
@@ -84,7 +85,8 @@ function checkHealth(checks) {
       const success = results.every(result => result.success),
         successfulChecks = results.filter(result => result.success),
         ping = _.fromPairs(successfulChecks.map(result => [result.service, result.duration])),
-        details = _.fromPairs(successfulChecks.filter(result => result.details || result.version).map(check => [check.service, {message:check.details, version: check.version && check.version.commit}]))
+        details = _.fromPairs(successfulChecks.filter(result => result.details).map(check => [check.service, check.details])),
+        dependencies = _.fromPairs(successfulChecks.filter(result => result.version).map(check => [check.service, check.version]))
 
       let failures = results.filter(result => !result.success).map(result => ({
         type: result.type,
@@ -97,6 +99,7 @@ function checkHealth(checks) {
         success,
         failures: failures.length ? failures : undefined,
         ping,
+        dependencies,
         details: Object.keys(details).length ? details : undefined,
         version: configuration.version
       }
