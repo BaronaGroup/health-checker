@@ -2,7 +2,6 @@
 
 const P = require('bluebird'),
   _ = require('lodash'),
-  path = require('path'),
   fs = P.promisifyAll(require('fs'))
 
 let configuration = {}
@@ -19,6 +18,8 @@ exports.configure = function (internalChecks, integrationChecks, options) {
     version: readVersionJson(opts.versionFile)
   }
 }
+
+exports.getAppVersion = () => configuration.version
 
 exports.setupExpressRoutes = function (app, prefix, additionalMiddleware) {
   app.get((prefix || '') + '/health/:mode?', disableCache, additionalMiddleware || noopMiddleware, exports.expressHealthCheck)
@@ -93,7 +94,7 @@ function checkHealth(checks) {
         service: result.service,
         message: result.message,
         isTimeout: result.isTimeout,
-        version: result.type !== 'internal' ? result.version : undefined
+        version: result.version
       }))
       return {
         success,

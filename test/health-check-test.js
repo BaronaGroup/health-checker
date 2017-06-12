@@ -12,6 +12,16 @@ const versionJson = {
 
 describe('health-check-test', function () {
 
+  describe('getAppVersion', function () {
+    it('returns app version', async function () {
+      fsMock({
+        'version.json' : JSON.stringify(versionJson)
+      })
+      hc.configure({test: () => {}}, null, {versionFile: 'version.json'})
+      assert.deepEqual(hc.getAppVersion(), versionJson)
+    })
+  })
+
   describe('single checks', function () {
     it('success has ping and version.json information', async function () {
       fsMock({
@@ -122,10 +132,8 @@ describe('health-check-test', function () {
           test4: () => ({details: 'oh my4'}),
           test5: () => ({version: {commit: 'SHA5'}})
         },
-        null,
-        'version.json')
+        {versionFile:'version.json'})
       const results = await hc.runHealthChecks()
-      console.log(results)
       assert.equal(results.details.test1, 'oh my1')
       assert.deepEqual(results.dependencies.test1, {commit: 'SHA1', releaseDate: 'date', foo: 'bar'})
 
