@@ -1,20 +1,25 @@
 'use strict'
 
 const P = require('bluebird'),
-  _ = require('lodash')
+  _ = require('lodash'),
+  fs = P.promisifyAll(require('fs'))
 
 let configuration = {}
 
 exports.getNow = () => new Date() // exposed for tests
 const getNow = () => exports.getNow()
 
-exports.configure = function (internalChecks, integrationChecks, timeout) {
+exports.configure = function (internalChecks, integrationChecks, options) {
+  const opts = options || {}
   configuration = {
     internalChecks: prepareChecksOfType('internal', internalChecks),
     integrationChecks: prepareChecksOfType('integration', integrationChecks),
-    timeout: timeout || 5000
+    timeout: opts.timeout || 5000,
+    version: readVersionJson(opts.versionFile)
   }
 }
+
+exports.getAppVersion = () => configuration.version
 
 exports.setupExpressRoutes = function (app, prefix, additionalMiddleware) {
   app.get((prefix || '') + '/health/:mode?', disableCache, additionalMiddleware || noopMiddleware, exports.expressHealthCheck)
@@ -81,24 +86,35 @@ function checkHealth(checks) {
       const success = results.every(result => result.success),
         successfulChecks = results.filter(result => result.success),
         ping = _.fromPairs(successfulChecks.map(result => [result.service, result.duration])),
-        details = _.fromPairs(successfulChecks.filter(check => check.details).map(check => [check.service, check.details]))
+        details = _.fromPairs(successfulChecks.filter(result => result.details).map(check => [check.service, check.details])),
+        dependencies = _.fromPairs(successfulChecks.filter(result => result.version).map(check => [check.service, check.version]))
 
       let failures = results.filter(result => !result.success).map(result => ({
         type: result.type,
         service: result.service,
         message: result.message,
-        isTimeout: result.isTimeout
+        isTimeout: result.isTimeout,
+        version: result.version
       }))
       return {
         success,
         failures: failures.length ? failures : undefined,
         ping,
-        details: Object.keys(details).length ? details : undefined
+        dependencies,
+        details: Object.keys(details).length ? details : undefined,
+        version: configuration.version
       }
     })
 
 }
 
+function readVersionJson(versionFile) {
+  if (versionFile) {
+    return fs.existsSync(versionFile) ? JSON.parse(fs.readFileSync(versionFile, 'utf8')) : undefined
+  } else {
+    return undefined
+  }
+}
 
 function prepareChecksOfType(type, checks) {
   if (!checks) return []
@@ -130,7 +146,7 @@ function checkSingleHealth(check) {
   return P.try(() => check.run()).timeout(check.timeout || configuration.timeout)
     .then(function (result) {
       const duration = new Date().valueOf() - dateAtStart
-      return Object.assign(baseOutput, {success: true, duration, details: result && result.details})
+      return Object.assign(baseOutput, {success: true, duration, details: result && result.details, version: result && result.version})
     }, function (err) {
       if (err instanceof P.TimeoutError) {
         return Object.assign(baseOutput, {success: false, isTimeout: true})

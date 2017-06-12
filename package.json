@@ -14,6 +14,7 @@
     "express": "^4.15.3",
     "lodash": "^4.17.4",
     "mocha": "^3.4.2",
+    "mock-fs": "^4.3.0",
     "post-commit": "0.0.1",
     "request": "^2.81.0",
     "request-promise": "^4.2.1"

@@ -1,11 +1,43 @@
-const hc = require('../health-checker'),
+const fsMock = require('mock-fs'),
+  hc = require('../health-checker'),
   _ = require('lodash'),
   {assert} = require('chai'),
   P = require('bluebird')
 
+const versionJson = {
+  commit: 'd224ae7d9d35fcf9d8d3dbe53b985e1bb6b18ea9',
+  commitDate: '2017-06-05T08:50:13+03:00',
+  releaseDate: '2018-06-05T08:50:13+03:00'
+}
+
 describe('health-check-test', function () {
+
+  describe('getAppVersion', function () {
+    it('returns app version', async function () {
+      fsMock({
+        'version.json' : JSON.stringify(versionJson)
+      })
+      hc.configure({test: () => {}}, null, {versionFile: 'version.json'})
+      assert.deepEqual(hc.getAppVersion(), versionJson)
+    })
+  })
+
   describe('single checks', function () {
-    it('success has ping', async function () {
+    it('success has ping and version.json information', async function () {
+      fsMock({
+        'version.json' : JSON.stringify(versionJson)
+      })
+
+      hc.configure({test: () => {}}, null, {versionFile: 'version.json'})
+      const results = await hc.runHealthChecks()
+      assert.ok(_.isNumber(results.ping.test))
+      assert.ok(results.ping.test < 100)
+      assert.isUndefined(results.details)
+      assert.deepEqual(results.version, versionJson)
+      fsMock.restore()
+    })
+
+    it('success has ping and no version info if version.json not found', async function () {
       hc.configure({
         test: () => {
         }
@@ -13,6 +45,7 @@ describe('health-check-test', function () {
       const results = await hc.runHealthChecks()
       assert.ok(_.isNumber(results.ping.test))
       assert.ok(results.ping.test < 100)
+      assert.isUndefined(results.version)
     })
 
     it('checks can be asynchronous (success)', async function () {
@@ -54,7 +87,7 @@ describe('health-check-test', function () {
     it('timeout is a thing', async function() {
       hc.configure({
         test: () => P.delay(500)
-      }, {}, 100)
+      }, {}, {timeout: 100})
       const results = await hc.runHealthChecks()
       assert.ok(!results.success)
       assert.ok(results.failures[0].isTimeout)
@@ -88,6 +121,33 @@ describe('health-check-test', function () {
       assert.equal(results.details.test, 'oh my')
     })
 
+    it('integration checks provide detailed message and versions', async function () {
+      fsMock({
+        'version.json' : JSON.stringify(versionJson)
+      })
+      hc.configure(null, {
+          test1: () => ({details: 'oh my1', version: {commit: 'SHA1', releaseDate: 'date', foo: 'bar'}}),
+          test2: () => ({details: 'oh my2', version: {commit: 'SHA2'}}),
+          test3: () => ({details: 'oh my3', version: {foo: 'SHA3'}}),
+          test4: () => ({details: 'oh my4'}),
+          test5: () => ({version: {commit: 'SHA5'}})
+        },
+        {versionFile:'version.json'})
+      const results = await hc.runHealthChecks()
+      assert.equal(results.details.test1, 'oh my1')
+      assert.deepEqual(results.dependencies.test1, {commit: 'SHA1', releaseDate: 'date', foo: 'bar'})
+
+      assert.equal(results.details.test2, 'oh my2')
+      assert.deepEqual(results.dependencies.test2, {commit: 'SHA2'})
+
+      assert.equal(results.details.test3, 'oh my3')
+      assert.deepEqual(results.dependencies.test3, {foo: 'SHA3'})
+
+      assert.equal(results.details.test4, 'oh my4')
+      assert.isUndefined(results.dependencies.test4)
+
+      assert.deepEqual(results.dependencies.test5, {commit: 'SHA5'})
+    })
 
   })
 
@@ -119,7 +179,7 @@ describe('health-check-test', function () {
         test1: async () => {},
         test2: async () => { await P.delay(500)},
         test3: async () => {}
-      }, {}, 200)
+      }, {}, {timeout: 200})
       const results = await hc.runHealthChecks()
       assert.equal(results.failures.length, 1)
       assert.ok(!results.success)
