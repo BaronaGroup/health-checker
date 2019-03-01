@@ -57,26 +57,28 @@ exports.officeHoursActivityThreshold = function (getLastOccurrence, thresholdMin
 
     const now = getNow(),
       isWeekend = now.getDay() === 0 || now.getDay() === 6,
-      isOfficeHours = !isWeekend && now >= startForToday && now <= endForToday, // TODO: add a thingamajig to prevent holidays from triggering health check failures
-      lastOccurrence = getLastOccurrence(),
-      minsSinceLastOccurence = lastOccurrence ? Math.floor((now.valueOf() - lastOccurrence.valueOf()) / 1000 / 60) : Infinity,
-      isTooLongSince = minsSinceLastOccurence > thresholdMinutes,
-      isFailure = isTooLongSince && isOfficeHours
+      isOfficeHours = !isWeekend && now >= startForToday && now <= endForToday // TODO: add a thingamajig to prevent holidays from triggering health check failures
 
-    const details = {
-      threshold: {
-        maxMinutesSinceLastEvent: thresholdMinutes,
-        minutesSinceLastEvent: minsSinceLastOccurence,
-        tolerated: isTooLongSince && !isOfficeHours ? 'tolerated because outside office hours' : undefined
-      }
-    }
+    return P.resolve(getLastOccurrence())
+      .then(function (lastOccurrence) {
+        const minsSinceLastOccurence = lastOccurrence && !isNaN(lastOccurrence) ? Math.floor((now.valueOf() - lastOccurrence.valueOf()) / 1000 / 60) : Infinity,
+          isTooLongSince = minsSinceLastOccurence > thresholdMinutes,
+          isFailure = isTooLongSince && isOfficeHours
 
-    if (isFailure) {
-      const error = new Error('Too long since last event; ' + JSON.stringify(details))
-      return P.reject(error)
-    } else {
-      return P.resolve({details: details})
-    }
+        const details = {
+          threshold: {
+            maxMinutesSinceLastEvent: thresholdMinutes,
+            minutesSinceLastEvent: minsSinceLastOccurence,
+            tolerated: isTooLongSince && !isOfficeHours ? 'tolerated because outside office hours' : undefined
+          }
+        }
+
+        if (isFailure) {
+          throw new Error('Too long since last event; ' + JSON.stringify(details))
+        } else {
+          return {details: details}
+        }
+      })
   }
 }
 

@@ -10,6 +10,18 @@ describe('office hours threshold test', function () {
 
   const longTimeAgo = new Date('2000-01-01T00:00:00.000+0300')
 
+  it('can have async getLastOccurrence function using promises', async function() {
+    now = new Date()
+    let value
+    hc.configure({
+      test: hc.officeHoursActivityThreshold(() => Promise.resolve(value), 30)
+    })
+    value = new Date()
+    assert.ok((await hc.runHealthChecks()).success, 'Success should work')
+    value = longTimeAgo
+    assert.ok(!(await hc.runHealthChecks()).success, 'Failure should work')
+  })
+
   describe('with a predefined threshold', function () {
     before(function() {
       hc.configure({
