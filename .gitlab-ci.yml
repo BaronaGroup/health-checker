@@ -30,7 +30,7 @@ test:
   dependencies:
     - build
   script:
-    - npm test -- --forceExit
+    - npm test
 
 lint:
   stage: test
