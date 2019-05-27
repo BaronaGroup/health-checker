@@ -21,6 +21,7 @@
   "scripts": {
     "eslint": "eslint .",
     "background-eslint-hook-impl": "background-eslint-hook-impl",
+    "lint": "npm run eslint",
     "test": "mocha"
   },
   "engines": {
