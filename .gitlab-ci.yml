@@ -16,7 +16,7 @@ cache:
 build:
   stage: build
   script:
-    - npm install && npm run build
+    - npm install
   except:
     - /^release_/
   cache:
