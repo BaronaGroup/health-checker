@@ -5,5 +5,7 @@ node_js:
 env:
   - TZ=Europe/Helsinki
 
+script:
+  - npm run eslint && npm test
 
 
