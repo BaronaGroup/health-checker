@@ -15,7 +15,7 @@
     "mocha": "6.2.0",
     "mock-fs": "4.10.1",
     "post-commit": "0.0.1",
-    "request": "2.88.0",
+    "request": "2.88.2",
     "request-promise": "4.2.4"
   },
   "scripts": {
