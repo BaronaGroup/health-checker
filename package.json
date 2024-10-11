@@ -13,7 +13,7 @@
     "eslint": "6.2.2",
     "express": "4.17.1",
     "mocha": "6.2.0",
-    "mock-fs": "4.10.1",
+    "mock-fs": "5.4.0",
     "post-commit": "0.0.1",
     "request": "2.88.0",
     "request-promise": "4.2.4"
