@@ -9,7 +9,7 @@
   },
   "devDependencies": {
     "background-eslint-hook-impl": "git+https://github.com/BaronaGroup/background-eslint-hook-impl.git#master",
-    "chai": "4.2.0",
+    "chai": "4.5.0",
     "eslint": "6.2.2",
     "express": "4.17.1",
     "mocha": "6.2.0",
