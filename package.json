@@ -11,7 +11,7 @@
     "background-eslint-hook-impl": "git+https://github.com/BaronaGroup/background-eslint-hook-impl.git#master",
     "chai": "4.2.0",
     "eslint": "6.2.2",
-    "express": "4.17.1",
+    "express": "4.20.0",
     "mocha": "6.2.0",
     "mock-fs": "4.10.1",
     "post-commit": "0.0.1",
